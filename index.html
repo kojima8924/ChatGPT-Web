@@ -5,48 +5,89 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Text Autocomplete Demo (OpenAI API)</title>
     <style>
+        /*
+         * ============================================
+         * CSS変数（カスタムプロパティ）の定義
+         * ダークテーマ用のカラーパレットとフォント設定
+         * ============================================
+         */
         :root {
+            /* 背景色 */
             --bg: #0b0f19;
             --panel: #111827;
             --panel2: #0f172a;
+
+            /* ボーダーとテキスト色 */
             --border: rgba(255,255,255,.12);
             --text: rgba(255,255,255,.92);
             --muted: rgba(255,255,255,.68);
-            --ghost: rgba(255,255,255,.35);
-            --accent: #60a5fa;
-            --danger: #fb7185;
-            --ok: #34d399;
+            --ghost: rgba(255,255,255,.35);      /* 補完候補（ゴースト）の色 */
+
+            /* アクセントカラー */
+            --accent: #60a5fa;                   /* 青系アクセント */
+            --danger: #fb7185;                   /* 危険・エラー用の赤 */
+            --ok: #34d399;                       /* 成功・OK用の緑 */
+
+            /* フォントファミリー */
             --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
             --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif;
         }
-        html, body { height: 100%; }
+
+        /*
+         * ============================================
+         * ベーススタイル
+         * ============================================
+         */
+        html, body {
+            height: 100%;
+        }
+
         body {
             margin: 0;
             font-family: var(--sans);
+            /* 複数のグラデーションを重ねて奥行きのある背景を作成 */
             background: radial-gradient(1200px 600px at 30% -10%, #1f2a5a 0%, transparent 60%),
                         radial-gradient(800px 500px at 80% 0%, #10304a 0%, transparent 55%),
                         var(--bg);
             color: var(--text);
         }
+
+        /*
+         * ============================================
+         * レイアウト：メインコンテナ
+         * ============================================
+         */
         .wrap {
             max-width: 980px;
-            margin: 22px auto 40px;
+            margin: 22px auto 40px;              /* 中央寄せ */
             padding: 0 16px;
         }
+
+        /* ページタイトル */
         h1 {
             font-size: 18px;
             margin: 0 0 14px;
             font-weight: 700;
             letter-spacing: .2px;
         }
+
+        /*
+         * ============================================
+         * カードコンポーネント
+         * メインUIを囲むコンテナ
+         * ============================================
+         */
         .card {
             border: 1px solid var(--border);
+            /* グラデーション背景でガラス風の効果 */
             background: linear-gradient(180deg, rgba(17,24,39,.92), rgba(15,23,42,.92));
             border-radius: 14px;
-            box-shadow: 0 20px 60px rgba(0,0,0,.35);
+            box-shadow: 0 20px 60px rgba(0,0,0,.35);   /* 浮遊感のある影 */
             overflow: hidden;
             margin-bottom: 14px;
         }
+
+        /* カードヘッダー：モデル選択とAPIキー入力 */
         .card .head {
             padding: 14px 14px 10px;
             border-bottom: 1px solid var(--border);
@@ -54,25 +95,37 @@
             align-items: center;
             gap: 10px;
             justify-content: space-between;
-            flex-wrap: wrap;
+            flex-wrap: wrap;                     /* レスポンシブ対応 */
         }
+
+        /* 左右のグループ分け */
         .left, .right {
             display: flex;
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
         }
+
+        /* ラベルテキスト */
         .label {
             font-size: 12px;
             color: var(--muted);
         }
+
+        /*
+         * ============================================
+         * セグメントボタン（モデル選択タブ）
+         * ピル型のボタングループ
+         * ============================================
+         */
         .seg {
             display: inline-flex;
             border: 1px solid var(--border);
-            border-radius: 999px;
+            border-radius: 999px;                /* 完全な丸み */
             overflow: hidden;
             background: rgba(255,255,255,.04);
         }
+
         .seg button {
             appearance: none;
             border: 0;
@@ -83,12 +136,22 @@
             font-size: 12px;
             font-family: var(--mono);
         }
+
+        /* 選択中のタブ */
         .seg button.active {
             background: rgba(96,165,250,.18);
             color: rgba(255,255,255,.95);
         }
-        .seg button:hover { background: rgba(255,255,255,.06); }
 
+        .seg button:hover {
+            background: rgba(255,255,255,.06);
+        }
+
+        /*
+         * ============================================
+         * 入力フィールド
+         * ============================================
+         */
         input[type="password"], input[type="text"], input[type="number"] {
             border: 1px solid var(--border);
             background: rgba(0,0,0,.18);
@@ -98,18 +161,30 @@
             outline: none;
             font-size: 12px;
             font-family: var(--mono);
-            width: min(380px, 70vw);
+            width: min(380px, 70vw);             /* レスポンシブ幅 */
         }
+
+        /* 数値入力は小さめ */
         input[type="number"] {
             width: 80px;
         }
+
+        /* スライダー */
         input[type="range"] {
             width: 120px;
-            accent-color: var(--accent);
+            accent-color: var(--accent);         /* スライダーのアクセント色 */
         }
+
+        /* 小さい入力フィールド用 */
         .mini {
             width: 200px;
         }
+
+        /*
+         * ============================================
+         * ボタンスタイル
+         * ============================================
+         */
         .btn {
             border: 1px solid var(--border);
             background: rgba(255,255,255,.06);
@@ -119,25 +194,66 @@
             cursor: pointer;
             font-size: 12px;
         }
-        .btn:hover { background: rgba(255,255,255,.09); }
-        .btn.danger:hover { background: rgba(251,113,133,.14); border-color: rgba(251,113,133,.3); }
-        .btn.primary { background: rgba(96,165,250,.2); border-color: rgba(96,165,250,.3); }
-        .btn.primary:hover { background: rgba(96,165,250,.3); }
+
+        .btn:hover {
+            background: rgba(255,255,255,.09);
+        }
+
+        /* 危険なアクション用（削除など） */
+        .btn.danger:hover {
+            background: rgba(251,113,133,.14);
+            border-color: rgba(251,113,133,.3);
+        }
+
+        /* プライマリボタン（保存など） */
+        .btn.primary {
+            background: rgba(96,165,250,.2);
+            border-color: rgba(96,165,250,.3);
+        }
+
+        .btn.primary:hover {
+            background: rgba(96,165,250,.3);
+        }
+
+        /*
+         * ============================================
+         * ステータス表示
+         * APIの状態をドットとテキストで表示
+         * ============================================
+         */
         .status {
             font-size: 12px;
             color: var(--muted);
             font-family: var(--mono);
         }
-        .dot { display: inline-block; width: 8px; height: 8px; border-radius: 99px; margin-right: 8px; vertical-align: -1px; background: rgba(255,255,255,.25); }
-        .dot.ok { background: rgba(52,211,153,.9); }
-        .dot.bad { background: rgba(251,113,133,.95); }
-        .dot.busy { background: rgba(96,165,250,.95); }
 
+        /* ステータスドット（インジケーター） */
+        .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 99px;
+            margin-right: 8px;
+            vertical-align: -1px;
+            background: rgba(255,255,255,.25);   /* デフォルト：グレー */
+        }
+
+        .dot.ok { background: rgba(52,211,153,.9); }     /* 成功：緑 */
+        .dot.bad { background: rgba(251,113,133,.95); }  /* エラー：赤 */
+        .dot.busy { background: rgba(96,165,250,.95); }  /* 処理中：青 */
+
+        /*
+         * ============================================
+         * エディタ領域
+         * テキスト入力と補完候補を表示
+         * ============================================
+         */
         .editor {
             position: relative;
             padding: 14px;
         }
-        .editorShell{
+
+        .editorShell {
             position: relative;
             border: 1px solid var(--border);
             background: rgba(0,0,0,.14);
@@ -145,25 +261,38 @@
             overflow: hidden;
             min-height: 320px;
         }
-        /* Mirror layer (shows typed + ghost) */
+
+        /*
+         * ミラー層
+         * 実際のテキストとゴースト（補完候補）を描画する層
+         * textareaの上に重ねて表示し、リッチなスタイリングを実現
+         */
         pre#mirror {
             margin: 0;
             padding: 14px;
             min-height: 320px;
-            white-space: pre-wrap;
+            white-space: pre-wrap;               /* 折り返しあり */
             word-wrap: break-word;
             font-family: var(--mono);
             font-size: 14px;
             line-height: 1.6;
             color: rgba(255,255,255,.92);
-            pointer-events: none;
+            pointer-events: none;                /* クリック無効（下のtextareaに透過） */
         }
-        #mirror .ghost { color: var(--ghost); }
 
-        /* Real textarea layer (transparent text, caret visible) */
+        /* ゴースト（補完候補）のスタイル */
+        #mirror .ghost {
+            color: var(--ghost);                 /* 薄いグレーで表示 */
+        }
+
+        /*
+         * 実際のtextarea層
+         * テキストは透明にして、カーソルだけ表示
+         * ミラー層でテキストを描画するためこの方式を採用
+         */
         textarea#ta {
             position: absolute;
-            inset: 0;
+            inset: 0;                            /* 親要素いっぱいに広げる */
             resize: none;
             border: 0;
             outline: none;
@@ -171,15 +300,23 @@
             width: 100%;
             height: 100%;
             background: transparent;
-            color: transparent;          /* important: mirror displays text */
-            caret-color: rgba(255,255,255,.92);
+            color: transparent;                  /* テキストは透明（ミラー層で表示） */
+            caret-color: rgba(255,255,255,.92);  /* カーソルは表示 */
             font-family: var(--mono);
             font-size: 14px;
             line-height: 1.6;
         }
-        /* selection still works but text is transparent; this is demo-friendly */
-        textarea#ta::selection { background: rgba(96,165,250,.35); }
 
+        /* テキスト選択時の背景色 */
+        textarea#ta::selection {
+            background: rgba(96,165,250,.35);
+        }
+
+        /*
+         * ============================================
+         * フッター（使い方説明）
+         * ============================================
+         */
         .foot {
             padding: 14px 14px 16px;
             border-top: 1px solid var(--border);
@@ -188,23 +325,38 @@
             font-size: 13px;
             line-height: 1.7;
         }
-        .foot kbd{
+
+        /* キーボードショートカット表示用 */
+        .foot kbd {
             font-family: var(--mono);
             font-size: 12px;
             border: 1px solid var(--border);
             background: rgba(255,255,255,.06);
-            border-bottom-color: rgba(255,255,255,.12);
+            border-bottom-color: rgba(255,255,255,.12);  /* 立体感 */
             padding: 2px 6px;
             border-radius: 8px;
             color: rgba(255,255,255,.86);
         }
+
+        /* 補足テキスト */
         .small {
             font-size: 12px;
             color: var(--muted);
         }
-        a { color: rgba(96,165,250,.95); }
 
-        /* Settings Panel */
+        /* リンク */
+        a {
+            color: rgba(96,165,250,.95);
+        }
+
+        /*
+         * ============================================
+         * 設定パネル
+         * 折りたたみ可能な設定UI
+         * ============================================
+         */
+
+        /* 設定パネルのトグルボタン */
         .settings-toggle {
             display: flex;
             align-items: center;
@@ -213,42 +365,58 @@
             padding: 10px 14px;
             border-bottom: 1px solid var(--border);
             background: rgba(255,255,255,.02);
-            user-select: none;
+            user-select: none;                   /* テキスト選択を防止 */
         }
+
         .settings-toggle:hover {
             background: rgba(255,255,255,.04);
         }
+
+        /* 矢印アイコン */
         .settings-toggle .arrow {
-            transition: transform 0.2s;
+            transition: transform 0.2s;          /* 回転アニメーション */
             font-size: 10px;
         }
+
+        /* 開いた状態の矢印（90度回転） */
         .settings-toggle.open .arrow {
             transform: rotate(90deg);
         }
+
+        /* 設定パネル本体（デフォルトは非表示） */
         .settings-panel {
             display: none;
             padding: 14px;
             border-bottom: 1px solid var(--border);
             background: rgba(0,0,0,.1);
         }
+
+        /* 開いた状態 */
         .settings-panel.open {
             display: block;
         }
+
+        /* 設定項目のグリッドレイアウト */
         .settings-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 16px;
         }
+
+        /* 個別の設定項目 */
         .setting-item {
             display: flex;
             flex-direction: column;
             gap: 6px;
         }
+
         .setting-item .label {
             display: flex;
             align-items: center;
             gap: 8px;
         }
+
+        /* 現在の値を表示するバッジ */
         .setting-item .value-display {
             font-family: var(--mono);
             font-size: 11px;
@@ -257,6 +425,8 @@
             padding: 2px 6px;
             border-radius: 4px;
         }
+
+        /* システムプロンプト用テキストエリア */
         .setting-item textarea {
             border: 1px solid var(--border);
             background: rgba(0,0,0,.18);
@@ -266,21 +436,27 @@
             outline: none;
             font-size: 12px;
             font-family: var(--mono);
-            resize: vertical;
+            resize: vertical;                    /* 縦方向のみリサイズ可能 */
             min-height: 80px;
             width: 100%;
             box-sizing: border-box;
         }
+
+        /* スライダーと数値入力の横並び */
         .setting-row {
             display: flex;
             align-items: center;
             gap: 10px;
         }
+
+        /* 設定パネルのボタン群 */
         .settings-actions {
             margin-top: 14px;
             display: flex;
             gap: 10px;
         }
+
+        /* システムプロンプトは全幅 */
         .prompt-full {
             grid-column: 1 / -1;
         }
@@ -290,12 +466,15 @@
     <div class="wrap">
         <h1>Text Autocomplete Demo (front-only / single file)</h1>
 
-        <!-- Top: model tabs + API key -->
+        <!-- メインカード：モデル選択・APIキー・エディタ・設定を含む -->
         <div class="card">
+            <!-- ヘッダー：モデル選択タブとAPIキー入力 -->
             <div class="head">
+                <!-- 左側：モデル選択 -->
                 <div class="left">
                     <div>
                         <div class="label">Model (tabs)</div>
+                        <!-- モデル選択タブ：クリックでモデルを切り替え -->
                         <div class="seg" id="modelTabs" role="tablist" aria-label="Model tabs">
                             <button type="button" class="active" data-model="gpt-4o-mini">gpt-4o-mini</button>
                             <button type="button" data-model="gpt-4.1-mini">gpt-4.1-mini</button>
@@ -305,28 +484,33 @@
                     </div>
                     <div>
                         <div class="label">Custom model (optional)</div>
+                        <!-- カスタムモデル入力：タブにないモデルを使う場合 -->
                         <input id="customModel" class="mini" type="text" placeholder="e.g. gpt-4o" spellcheck="false" />
                     </div>
                 </div>
 
+                <!-- 右側：APIキーとステータス -->
                 <div class="right">
                     <div>
                         <div class="label">OpenAI API Key (saved to Web Storage)</div>
+                        <!-- APIキー入力：localStorageに保存される -->
                         <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false" />
                     </div>
                     <button class="btn" id="saveKeyBtn" type="button">Save</button>
                     <button class="btn danger" id="clearKeyBtn" type="button">Clear</button>
+                    <!-- ステータス表示：idle/ok/bad/busy -->
                     <div class="status" id="status"><span class="dot"></span>idle</div>
                 </div>
             </div>
 
-            <!-- Settings Panel -->
+            <!-- 設定パネル：クリックで開閉 -->
             <div class="settings-toggle" id="settingsToggle">
                 <span class="arrow">▶</span>
                 <span>設定</span>
             </div>
             <div class="settings-panel" id="settingsPanel">
                 <div class="settings-grid">
+                    <!-- 待機時間（デバウンス）設定 -->
                     <div class="setting-item">
                         <div class="label">
                             待機時間 (ms)
@@ -337,6 +521,8 @@
                             <input type="number" id="debounceInput" min="100" max="5000" step="50" value="700" />
                         </div>
                     </div>
+
+                    <!-- Temperature設定：高いほど創造的、低いほど確定的 -->
                     <div class="setting-item">
                         <div class="label">
                             Temperature
@@ -347,6 +533,8 @@
                             <input type="number" id="temperatureInput" min="0" max="2" step="0.1" value="0.7" />
                         </div>
                     </div>
+
+                    <!-- 最大出力トークン数 -->
                     <div class="setting-item">
                         <div class="label">
                             Max Output Tokens
@@ -357,6 +545,8 @@
                             <input type="number" id="maxTokensInput" min="1" max="4096" step="1" value="96" />
                         </div>
                     </div>
+
+                    <!-- 送信するコンテキストの最大文字数 -->
                     <div class="setting-item">
                         <div class="label">
                             Max Context Chars
@@ -367,6 +557,8 @@
                             <input type="number" id="maxContextInput" min="100" max="50000" step="100" value="2000" />
                         </div>
                     </div>
+
+                    <!-- システムプロンプト：補完の振る舞いを指示 -->
                     <div class="setting-item prompt-full">
                         <div class="label">システムプロンプト</div>
                         <textarea id="systemPrompt" rows="5">あなたがやること：
@@ -376,16 +568,20 @@
 - 余計な解説はしない（続きの本文のみ）</textarea>
                     </div>
                 </div>
+
+                <!-- 設定の保存・リセットボタン -->
                 <div class="settings-actions">
                     <button class="btn primary" id="saveSettingsBtn" type="button">設定を保存</button>
                     <button class="btn" id="resetSettingsBtn" type="button">デフォルトに戻す</button>
                 </div>
             </div>
 
-            <!-- Middle: text input with ghost completion -->
+            <!-- エディタ領域：テキスト入力と補完候補表示 -->
             <div class="editor">
                 <div class="editorShell" aria-label="Editor">
+                    <!-- ミラー層：入力テキストと補完候補を描画 -->
                     <pre id="mirror"></pre>
+                    <!-- 実際の入力textarea：テキストは透明、カーソルのみ表示 -->
                     <textarea id="ta" spellcheck="false" aria-label="Text input"></textarea>
                 </div>
                 <div class="small" style="margin-top:10px;">
@@ -393,7 +589,7 @@
                 </div>
             </div>
 
-            <!-- Bottom: usage -->
+            <!-- フッター：使い方の説明 -->
             <div class="foot">
                 <div><strong>使い方</strong></div>
                 <ul style="margin:8px 0 0; padding-left: 18px;">
@@ -408,12 +604,35 @@
     </div>
 
     <script>
-        // ====== Default Settings ======
+        /*
+         * ============================================
+         * テキスト自動補完デモ
+         * OpenAI APIを使用したリアルタイム補完
+         * ============================================
+         *
+         * 【動作概要】
+         * 1. ユーザーがテキストを入力
+         * 2. 入力が一定時間（デバウンス）止まる
+         * 3. OpenAI APIに補完リクエストを送信
+         * 4. 補完候補を「ゴースト」として灰色で表示
+         * 5. Tab/矢印キーで補完を確定、Esc/Enterで破棄
+         *
+         * 【技術的なポイント】
+         * - textareaのテキストは透明にして、ミラー層（pre要素）で描画
+         * - これにより、入力テキストと補完候補を異なるスタイルで表示可能
+         * - デバウンス処理で不要なAPI呼び出しを抑制
+         * - AbortControllerで古いリクエストをキャンセル
+         */
+
+        // ============================================
+        // デフォルト設定値
+        // ユーザーが変更しなかった場合に使用される初期値
+        // ============================================
         const DEFAULTS = {
-            debounceMs: 700,
-            maxContextChars: 2000,
-            maxOutputTokens: 96,
-            temperature: 0.7,
+            debounceMs: 700,          // 入力後の待機時間（ミリ秒）
+            maxContextChars: 2000,    // APIに送信するコンテキストの最大文字数
+            maxOutputTokens: 96,      // 補完の最大トークン数（短めに設定）
+            temperature: 0.7,         // 創造性パラメータ（0=確定的、2=創造的）
             systemPrompt: `あなたがやること：
 - 入力されたテキストの「続き」だけを自然に補完する
 - 既存の文章は絶対に繰り返さない（出力に含めない）
@@ -421,64 +640,103 @@
 - 余計な解説はしない（続きの本文のみ）`
         };
 
-        const STORAGE_KEY = "demo_openai_api_key_v1";
-        const SETTINGS_KEY = "demo_openai_settings_v1";
-        const DEBUG_CONSOLE = true;
-        const LOG_TRIM = 800;
-        const LOG_RESPONSE_JSON = false;
+        // ============================================
+        // ストレージキー
+        // localStorageに保存する際のキー名
+        // ============================================
+        const STORAGE_KEY = "demo_openai_api_key_v1";     // APIキー保存用
+        const SETTINGS_KEY = "demo_openai_settings_v1";   // 設定保存用
 
-        // ====== Settings State ======
+        // ============================================
+        // デバッグ設定
+        // 開発時のログ出力制御
+        // ============================================
+        const DEBUG_CONSOLE = true;       // コンソールログを出力するか
+        const LOG_TRIM = 800;             // ログに表示する最大文字数
+        const LOG_RESPONSE_JSON = false;  // レスポンスJSONを全て表示するか
+
+        // ============================================
+        // 現在の設定を保持する変数
+        // DEFAULTSのコピーで初期化
+        // ============================================
         let settings = { ...DEFAULTS };
 
-        // ====== DOM ======
-        const modelTabs = document.getElementById("modelTabs");
-        const customModel = document.getElementById("customModel");
-        const apiKeyEl = document.getElementById("apiKey");
-        const saveKeyBtn = document.getElementById("saveKeyBtn");
-        const clearKeyBtn = document.getElementById("clearKeyBtn");
-        const statusEl = document.getElementById("status");
-        const mirrorEl = document.getElementById("mirror");
-        const ta = document.getElementById("ta");
+        // ============================================
+        // DOM要素の取得
+        // 各UI要素への参照をキャッシュ
+        // ============================================
 
-        // Settings DOM
-        const settingsToggle = document.getElementById("settingsToggle");
-        const settingsPanel = document.getElementById("settingsPanel");
-        const debounceRange = document.getElementById("debounceRange");
-        const debounceInput = document.getElementById("debounceInput");
-        const debounceDisplay = document.getElementById("debounceDisplay");
-        const debounceHint = document.getElementById("debounceHint");
-        const temperatureRange = document.getElementById("temperatureRange");
-        const temperatureInput = document.getElementById("temperatureInput");
-        const temperatureDisplay = document.getElementById("temperatureDisplay");
-        const maxTokensRange = document.getElementById("maxTokensRange");
-        const maxTokensInput = document.getElementById("maxTokensInput");
-        const maxTokensDisplay = document.getElementById("maxTokensDisplay");
-        const maxContextRange = document.getElementById("maxContextRange");
-        const maxContextInput = document.getElementById("maxContextInput");
-        const maxContextDisplay = document.getElementById("maxContextDisplay");
-        const systemPrompt = document.getElementById("systemPrompt");
-        const saveSettingsBtn = document.getElementById("saveSettingsBtn");
-        const resetSettingsBtn = document.getElementById("resetSettingsBtn");
+        // モデル選択関連
+        const modelTabs = document.getElementById("modelTabs");          // モデル選択タブ
+        const customModel = document.getElementById("customModel");      // カスタムモデル入力
 
-        // ====== State ======
-        let selectedModel = "gpt-4o-mini";
-        let ghost = "";
-        let debounceTimer = null;
-        let inFlight = null;
-        let lastRequestedPrefix = "";
+        // APIキー関連
+        const apiKeyEl = document.getElementById("apiKey");              // APIキー入力
+        const saveKeyBtn = document.getElementById("saveKeyBtn");        // 保存ボタン
+        const clearKeyBtn = document.getElementById("clearKeyBtn");      // クリアボタン
 
-        // ====== Settings Functions ======
+        // ステータス表示
+        const statusEl = document.getElementById("status");              // ステータス表示エリア
+
+        // エディタ関連
+        const mirrorEl = document.getElementById("mirror");              // ミラー層（テキスト描画用）
+        const ta = document.getElementById("ta");                        // 入力textarea
+
+        // 設定パネル関連
+        const settingsToggle = document.getElementById("settingsToggle");        // 設定開閉トグル
+        const settingsPanel = document.getElementById("settingsPanel");          // 設定パネル本体
+        const debounceRange = document.getElementById("debounceRange");          // 待機時間スライダー
+        const debounceInput = document.getElementById("debounceInput");          // 待機時間数値入力
+        const debounceDisplay = document.getElementById("debounceDisplay");      // 待機時間表示
+        const debounceHint = document.getElementById("debounceHint");            // 使い方説明内の表示
+        const temperatureRange = document.getElementById("temperatureRange");    // Temperatureスライダー
+        const temperatureInput = document.getElementById("temperatureInput");    // Temperature数値入力
+        const temperatureDisplay = document.getElementById("temperatureDisplay");// Temperature表示
+        const maxTokensRange = document.getElementById("maxTokensRange");        // 最大トークンスライダー
+        const maxTokensInput = document.getElementById("maxTokensInput");        // 最大トークン数値入力
+        const maxTokensDisplay = document.getElementById("maxTokensDisplay");    // 最大トークン表示
+        const maxContextRange = document.getElementById("maxContextRange");      // コンテキストスライダー
+        const maxContextInput = document.getElementById("maxContextInput");      // コンテキスト数値入力
+        const maxContextDisplay = document.getElementById("maxContextDisplay");  // コンテキスト表示
+        const systemPrompt = document.getElementById("systemPrompt");            // システムプロンプト入力
+        const saveSettingsBtn = document.getElementById("saveSettingsBtn");      // 設定保存ボタン
+        const resetSettingsBtn = document.getElementById("resetSettingsBtn");    // リセットボタン
+
+        // ============================================
+        // アプリケーション状態
+        // ============================================
+        let selectedModel = "gpt-4o-mini";    // 現在選択中のモデル
+        let ghost = "";                        // 補完候補（ゴースト）テキスト
+        let debounceTimer = null;              // デバウンス用タイマーID
+        let inFlight = null;                   // 実行中のリクエスト（AbortController）
+        let lastRequestedPrefix = "";          // 最後にリクエストしたプレフィックス（古い結果を破棄するため）
+
+        // ============================================
+        // 設定管理関数
+        // localStorageとの連携
+        // ============================================
+
+        /**
+         * localStorageから設定を読み込む
+         * 保存された設定がなければデフォルト値を使用
+         */
         function loadSettings() {
             try {
                 const saved = localStorage.getItem(SETTINGS_KEY);
                 if (saved) {
                     const parsed = JSON.parse(saved);
+                    // デフォルト値とマージ（未定義のプロパティを補完）
                     settings = { ...DEFAULTS, ...parsed };
                 }
-            } catch (_) {}
+            } catch (_) {
+                // パースエラー時はデフォルト値を使用
+            }
             applySettingsToUI();
         }
 
+        /**
+         * 現在の設定をlocalStorageに保存
+         */
         function saveSettings() {
             try {
                 localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -488,6 +746,10 @@
             }
         }
 
+        /**
+         * 設定をデフォルト値にリセット
+         * UIも更新し、localStorageにも保存
+         */
         function resetSettings() {
             settings = { ...DEFAULTS };
             applySettingsToUI();
@@ -495,27 +757,40 @@
             setStatus("ok", "settings_reset");
         }
 
+        /**
+         * 現在の設定値をUI要素に反映
+         * 各入力フィールドと表示を更新
+         */
         function applySettingsToUI() {
+            // 待機時間
             debounceRange.value = settings.debounceMs;
             debounceInput.value = settings.debounceMs;
             debounceDisplay.textContent = settings.debounceMs;
             debounceHint.textContent = settings.debounceMs + "ms";
 
+            // Temperature
             temperatureRange.value = settings.temperature;
             temperatureInput.value = settings.temperature;
             temperatureDisplay.textContent = settings.temperature;
 
+            // 最大出力トークン
             maxTokensRange.value = settings.maxOutputTokens;
             maxTokensInput.value = settings.maxOutputTokens;
             maxTokensDisplay.textContent = settings.maxOutputTokens;
 
+            // 最大コンテキスト文字数
             maxContextRange.value = settings.maxContextChars;
             maxContextInput.value = settings.maxContextChars;
             maxContextDisplay.textContent = settings.maxContextChars;
 
+            // システムプロンプト
             systemPrompt.value = settings.systemPrompt;
         }
 
+        /**
+         * UI要素から設定値を読み取ってsettingsオブジェクトに反映
+         * 保存前に呼び出す
+         */
         function readSettingsFromUI() {
             settings.debounceMs = parseInt(debounceInput.value) || DEFAULTS.debounceMs;
             settings.temperature = parseFloat(temperatureInput.value) || DEFAULTS.temperature;
@@ -524,7 +799,15 @@
             settings.systemPrompt = systemPrompt.value || DEFAULTS.systemPrompt;
         }
 
-        // Setting sync helpers
+        /**
+         * スライダーと数値入力を同期する汎用関数
+         * @param {HTMLInputElement} rangeEl - スライダー要素
+         * @param {HTMLInputElement} inputEl - 数値入力要素
+         * @param {HTMLElement} displayEl - 表示要素
+         * @param {string} key - settings内のキー名
+         * @param {function} parser - 値のパース関数（parseInt/parseFloat）
+         * @param {function} extraUpdate - 追加の更新処理（オプション）
+         */
         function syncSetting(rangeEl, inputEl, displayEl, key, parser, extraUpdate) {
             const update = (val) => {
                 const parsed = parser(val);
@@ -534,37 +817,76 @@
                 displayEl.textContent = parsed;
                 if (extraUpdate) extraUpdate(parsed);
             };
+            // 各入力イベントで同期
             rangeEl.addEventListener("input", () => update(rangeEl.value));
             inputEl.addEventListener("input", () => update(inputEl.value));
             inputEl.addEventListener("change", () => update(inputEl.value));
         }
 
-        // ====== Helpers ======
+        // ============================================
+        // ヘルパー関数
+        // ============================================
+
+        /**
+         * APIキーをマスクして表示用に変換
+         * 先頭4文字だけ残し、残りを*で隠す
+         * @param {string} k - APIキー
+         * @returns {string} マスクされたキー
+         */
         function maskApiKey(k) {
             if (!k) return "";
             const head = k.slice(0, 4);
             return head + "…" + "*".repeat(Math.max(0, k.length - 5));
         }
 
+        /**
+         * 長い文字列をログ用にトリミング
+         * @param {string} s - 対象文字列
+         * @param {number} n - 最大長
+         * @returns {string} トリミングされた文字列
+         */
         function trimForLog(s, n = LOG_TRIM) {
             if (typeof s !== "string") return s;
             if (s.length <= n) return s;
             return s.slice(0, n) + `…(trimmed ${s.length - n} chars)`;
         }
 
+        /**
+         * デバッグログを折りたたみグループで出力
+         * DEBUG_CONSOLEがfalseなら何もしない
+         * @param {string} title - グループタイトル
+         * @param {object} obj - ログ対象オブジェクト
+         */
         function logGroup(title, obj) {
             if (!DEBUG_CONSOLE) return;
             console.groupCollapsed(title);
-            try { console.log(obj); } finally { console.groupEnd(); }
+            try {
+                console.log(obj);
+            } finally {
+                console.groupEnd();
+            }
         }
 
+        /**
+         * ステータス表示を更新
+         * @param {string} kind - ステータス種類（"ok"/"bad"/"busy"/""）
+         * @param {string} text - 表示テキスト
+         */
         function setStatus(kind, text) {
             const dot = statusEl.querySelector(".dot");
+            // ドットのクラスを更新
             dot.className = "dot" + (kind ? (" " + kind) : "");
+            // テキストノードを差し替え
             statusEl.lastChild && statusEl.lastChild.remove();
             statusEl.appendChild(document.createTextNode(text));
         }
 
+        /**
+         * HTML特殊文字をエスケープ
+         * XSS対策のため、ユーザー入力をHTMLに埋め込む前に呼び出す
+         * @param {string} s - エスケープ対象
+         * @returns {string} エスケープ済み文字列
+         */
         function escapeHtml(s) {
             return s.replace(/[&<>"']/g, (c) => (
                 c === "&" ? "&amp;" :
@@ -574,78 +896,142 @@
             ));
         }
 
+        /**
+         * ミラー層を再描画
+         * 入力テキストとゴーストを合成してHTMLとして挿入
+         */
         function render() {
             const text = ta.value || "";
+            // 末尾の改行を表示するためにゼロ幅スペースを追加
             const safeText = escapeHtml(text).replace(/\n$/g, "\n\u200b");
             const safeGhost = escapeHtml(ghost);
+            // ゴーストがあれば灰色のspanで囲んで表示
             mirrorEl.innerHTML = safeText + (ghost ? `<span class="ghost">${safeGhost}</span>` : "");
         }
 
+        /**
+         * カーソルがテキスト末尾にあるかチェック
+         * ゴースト操作は末尾でのみ有効
+         * @returns {boolean} 末尾にあればtrue
+         */
         function atEnd() {
             return ta.selectionStart === ta.value.length && ta.selectionEnd === ta.value.length;
         }
 
+        /**
+         * ゴーストをクリア
+         * 補完候補を破棄
+         */
         function clearGhost() {
             ghost = "";
             render();
         }
 
+        /**
+         * ゴースト全体を確定
+         * Tabキーで呼び出される
+         */
         function acceptAllGhost() {
             if (!ghost) return;
-            ta.value += ghost;
-            ghost = "";
+            ta.value += ghost;           // ゴーストをテキストに追加
+            ghost = "";                  // ゴーストをクリア
+            // カーソルを末尾に移動
             ta.selectionStart = ta.selectionEnd = ta.value.length;
             render();
         }
 
+        /**
+         * ゴーストから1文字だけ確定
+         * →キーで呼び出される
+         */
         function acceptOneChar() {
             if (!ghost) return;
-            ta.value += ghost[0];
-            ghost = ghost.slice(1);
+            ta.value += ghost[0];        // ゴーストの先頭1文字を追加
+            ghost = ghost.slice(1);      // ゴーストから削除
             ta.selectionStart = ta.selectionEnd = ta.value.length;
             render();
         }
 
+        /**
+         * 確定済みテキストから1文字をゴーストに戻す
+         * ←キーで呼び出される（→の逆操作）
+         */
         function rejectOneChar() {
             if (!ta.value) return;
-            ghost = ta.value.slice(-1) + ghost;
-            ta.value = ta.value.slice(0, -1);
+            ghost = ta.value.slice(-1) + ghost;  // テキスト末尾をゴースト先頭に
+            ta.value = ta.value.slice(0, -1);    // テキストから削除
             ta.selectionStart = ta.selectionEnd = ta.value.length;
             render();
         }
 
+        /**
+         * 使用するモデル名を取得
+         * カスタム入力があればそちらを優先
+         * @returns {string} モデル名
+         */
         function getModel() {
             const custom = (customModel.value || "").trim();
             return custom || selectedModel;
         }
 
+        /**
+         * APIキーを取得
+         * @returns {string} APIキー（トリム済み）
+         */
         function getApiKey() {
             return (apiKeyEl.value || "").trim();
         }
 
+        /**
+         * 実行中のAPIリクエストをキャンセル
+         * 新しいリクエストを送る前に呼び出す
+         */
         function cancelInFlight() {
             if (inFlight) {
-                try { inFlight.abort(); } catch (_) {}
+                try {
+                    inFlight.abort();    // リクエストを中断
+                } catch (_) {}
                 inFlight = null;
             }
         }
 
+        /**
+         * 補完結果を正規化
+         * モデルがプレフィックスを繰り返した場合に除去
+         * @param {string} prefix - ユーザーが入力したテキスト
+         * @param {string} completion - モデルからの補完
+         * @returns {string} 正規化された補完テキスト
+         */
         function normalizeCompletion(prefix, completion) {
             if (!completion) return "";
             let c = completion;
 
+            // モデルがプレフィックスの一部を繰り返した場合、除去
             const tail = prefix.slice(-50);
             if (tail && c.startsWith(tail)) c = c.slice(tail.length);
+
+            // 完全なプレフィックスの繰り返しも除去
             if (c.startsWith(prefix)) c = c.slice(prefix.length);
+
+            // プレフィックスが空白で終わる場合、先頭の空白を除去
             if (/\s$/.test(prefix)) c = c.replace(/^\s+/, "");
 
             return c;
         }
 
+        /**
+         * OpenAI APIレスポンスからテキストを抽出
+         * Responses APIの構造に対応
+         * @param {object} json - APIレスポンス
+         * @returns {string} 抽出されたテキスト
+         */
         function extractOutputText(json) {
             if (!json) return "";
+
+            // 直接output_textプロパティがある場合
             if (typeof json.output_text === "string") return json.output_text;
 
+            // outputの中からメッセージを探す
             const out = json.output;
             if (!Array.isArray(out)) return "";
 
@@ -654,23 +1040,38 @@
                 if (!item || item.type !== "message") continue;
                 const content = item.content;
                 if (!Array.isArray(content)) continue;
+                // output_text タイプのコンテンツを連結
                 for (const c of content) {
-                    if (c && c.type === "output_text" && typeof c.text === "string") acc += c.text;
+                    if (c && c.type === "output_text" && typeof c.text === "string") {
+                        acc += c.text;
+                    }
                 }
             }
             return acc;
         }
 
-        // ====== API call ======
+        // ============================================
+        // API呼び出し
+        // ============================================
+
+        /**
+         * OpenAI APIに補完リクエストを送信
+         * @param {string} prefix - 補完元のテキスト
+         * @returns {Promise<string>} 補完テキスト
+         */
         async function requestCompletion(prefix) {
             const apiKey = getApiKey();
+
+            // APIキーがない場合はエラー
             if (!apiKey) {
                 setStatus("bad", "missing_api_key");
                 return "";
             }
 
+            // コンテキストを最大文字数で切り詰め（末尾を使用）
             const context = prefix.slice(-settings.maxContextChars);
 
+            // リクエストボディを構築
             const body = {
                 model: getModel(),
                 instructions: settings.systemPrompt,
@@ -679,8 +1080,9 @@
                 temperature: settings.temperature,
             };
 
+            // デバッグログ出力
             if (DEBUG_CONSOLE) {
-                logGroup("[OpenAI Request]", {
+                logGroup("[OpenAI リクエスト]", {
                     url: "https://api.openai.com/v1/responses",
                     method: "POST",
                     headers: {
@@ -689,15 +1091,19 @@
                     },
                     body: {
                         ...body,
-                        input: trimForLog(body.input)
+                        input: trimForLog(body.input)    // 長い入力はトリム
                     }
                 });
             }
 
+            // 古いリクエストをキャンセル
             cancelInFlight();
             inFlight = new AbortController();
 
+            // ステータスを「処理中」に
             setStatus("busy", "requesting...");
+
+            // APIリクエスト送信
             const res = await fetch("https://api.openai.com/v1/responses", {
                 method: "POST",
                 headers: {
@@ -705,16 +1111,17 @@
                     "Authorization": "Bearer " + apiKey
                 },
                 body: JSON.stringify(body),
-                signal: inFlight.signal
+                signal: inFlight.signal    // キャンセル用シグナル
             });
 
+            // エラーレスポンスの処理
             if (!res.ok) {
                 let msg = "http_" + res.status;
                 try {
                     const err = await res.json();
                     msg = (err && err.error && err.error.message) ? err.error.message : msg;
                     if (DEBUG_CONSOLE) {
-                        logGroup("[OpenAI Error]", {
+                        logGroup("[OpenAI エラー]", {
                             http_status: res.status,
                             message: msg
                         });
@@ -724,10 +1131,11 @@
                 return "";
             }
 
+            // 成功レスポンスの処理
             const json = await res.json();
             if (DEBUG_CONSOLE) {
                 const outText = extractOutputText(json);
-                logGroup("[OpenAI Response]", {
+                logGroup("[OpenAI レスポンス]", {
                     http_status: res.status,
                     ok: res.ok,
                     output_text: trimForLog(outText),
@@ -740,79 +1148,136 @@
             return raw || "";
         }
 
-        // ====== Debounced completion logic ======
+        // ============================================
+        // デバウンス付き補完ロジック
+        // ============================================
+
+        /**
+         * 補完リクエストをスケジュール
+         * デバウンス処理により、連続入力中は発火しない
+         */
         async function scheduleCompletion() {
-            if (!atEnd()) { clearGhost(); return; }
+            // カーソルが末尾にない場合は補完しない
+            if (!atEnd()) {
+                clearGhost();
+                return;
+            }
 
             const text = ta.value || "";
-            if (!text.trim()) { clearGhost(); setStatus("", "idle"); return; }
 
+            // 空テキストの場合は補完しない
+            if (!text.trim()) {
+                clearGhost();
+                setStatus("", "idle");
+                return;
+            }
+
+            // 入力中は古いゴーストをクリア
             clearGhost();
 
+            // 既存のタイマーをキャンセル
             if (debounceTimer) clearTimeout(debounceTimer);
+
+            // 新しいタイマーをセット
             debounceTimer = setTimeout(async () => {
+                // タイマー発火時にもカーソル位置をチェック
                 if (!atEnd()) return;
 
                 const prefix = ta.value || "";
-                lastRequestedPrefix = prefix;
+                lastRequestedPrefix = prefix;    // 古い結果を破棄するために記録
 
                 try {
                     const completion = await requestCompletion(prefix);
+
+                    // リクエスト中にテキストが変わった場合は結果を破棄
                     if ((ta.value || "") !== lastRequestedPrefix) return;
 
                     const normalized = normalizeCompletion(prefix, completion);
                     ghost = normalized;
                     render();
+
+                    // 空の補完の場合も正常扱い
                     if (!ghost) setStatus("ok", "ok (empty)");
                 } catch (e) {
+                    // キャンセルされた場合は無視
                     if (e && e.name === "AbortError") return;
                     setStatus("bad", (e && e.message) ? e.message : "error");
                 }
             }, settings.debounceMs);
         }
 
-        // ====== Model tabs ======
+        // ============================================
+        // イベントリスナーの設定
+        // ============================================
+
+        // --- モデル選択タブ ---
         modelTabs.addEventListener("click", (e) => {
             const btn = e.target.closest("button[data-model]");
             if (!btn) return;
+
+            // 選択されたモデルを更新
             selectedModel = btn.dataset.model;
-            for (const b of modelTabs.querySelectorAll("button")) b.classList.toggle("active", b === btn);
+
+            // アクティブ状態を更新
+            for (const b of modelTabs.querySelectorAll("button")) {
+                b.classList.toggle("active", b === btn);
+            }
+
+            // モデル変更時はゴーストをクリアして再補完
             clearGhost();
             scheduleCompletion();
         });
 
-        // ====== Settings toggle ======
+        // --- 設定パネルの開閉 ---
         settingsToggle.addEventListener("click", () => {
             settingsToggle.classList.toggle("open");
             settingsPanel.classList.toggle("open");
         });
 
-        // ====== Settings sync ======
+        // --- 設定項目の同期 ---
+        // 待機時間：スライダーと数値入力を連動
         syncSetting(debounceRange, debounceInput, debounceDisplay, "debounceMs", parseInt, (v) => {
-            debounceHint.textContent = v + "ms";
+            debounceHint.textContent = v + "ms";    // 使い方説明も更新
         });
+
+        // Temperature
         syncSetting(temperatureRange, temperatureInput, temperatureDisplay, "temperature", parseFloat);
+
+        // 最大出力トークン
         syncSetting(maxTokensRange, maxTokensInput, maxTokensDisplay, "maxOutputTokens", parseInt);
+
+        // 最大コンテキスト文字数
         syncSetting(maxContextRange, maxContextInput, maxContextDisplay, "maxContextChars", parseInt);
 
+        // システムプロンプトの変更
         systemPrompt.addEventListener("input", () => {
             settings.systemPrompt = systemPrompt.value;
         });
 
+        // 設定保存ボタン
         saveSettingsBtn.addEventListener("click", () => {
             readSettingsFromUI();
             saveSettings();
         });
 
+        // リセットボタン
         resetSettingsBtn.addEventListener("click", resetSettings);
 
-        // ====== Key storage ======
+        // --- APIキー管理 ---
+
+        /**
+         * localStorageからAPIキーを読み込む
+         */
         function loadKeyFromStorage() {
             try {
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (saved) apiKeyEl.value = saved;
             } catch (_) {}
         }
+
+        /**
+         * APIキーをlocalStorageに保存
+         */
         function saveKeyToStorage() {
             try {
                 localStorage.setItem(STORAGE_KEY, getApiKey());
@@ -821,6 +1286,10 @@
                 setStatus("bad", "storage_failed");
             }
         }
+
+        /**
+         * APIキーをlocalStorageから削除
+         */
         function clearKeyFromStorage() {
             try {
                 localStorage.removeItem(STORAGE_KEY);
@@ -828,57 +1297,79 @@
                 setStatus("", "key_cleared");
             } catch (_) {}
         }
+
+        // キー操作ボタン
         saveKeyBtn.addEventListener("click", saveKeyToStorage);
         clearKeyBtn.addEventListener("click", clearKeyFromStorage);
+
+        // Enterキーでも保存
         apiKeyEl.addEventListener("keydown", (e) => {
             if (e.key === "Enter") saveKeyToStorage();
         });
 
-        // ====== Editor events ======
+        // --- エディタイベント ---
+
+        // テキスト入力時
         ta.addEventListener("input", () => {
-            cancelInFlight();
-            scheduleCompletion();
-            render();
+            cancelInFlight();        // 古いリクエストをキャンセル
+            scheduleCompletion();    // 新しい補完をスケジュール
+            render();                // 表示を更新
         });
 
+        // スクロール同期：textareaとミラー層のスクロール位置を合わせる
         ta.addEventListener("scroll", () => {
             mirrorEl.scrollTop = ta.scrollTop;
             mirrorEl.scrollLeft = ta.scrollLeft;
         });
 
+        // クリック時：末尾以外をクリックしたらゴーストをクリア
         ta.addEventListener("click", () => {
             if (!atEnd()) clearGhost();
         });
 
+        // キーアップ時：カーソル移動でゴーストをクリア
         ta.addEventListener("keyup", () => {
             if (!atEnd()) clearGhost();
         });
 
+        // キーダウン時：特殊キーの処理
         ta.addEventListener("keydown", (e) => {
+            // ゴーストがない場合は通常動作
             if (!ghost) return;
+
+            // カーソルが末尾にない場合は通常動作
             if (!atEnd()) return;
 
+            // Tab: ゴースト全体を確定
             if (e.key === "Tab") {
-                e.preventDefault();
+                e.preventDefault();      // デフォルト動作（フォーカス移動）を防止
                 acceptAllGhost();
                 return;
             }
+
+            // →: ゴーストから1文字確定
             if (e.key === "ArrowRight") {
                 e.preventDefault();
                 acceptOneChar();
                 return;
             }
+
+            // ←: 確定済みから1文字戻す
             if (e.key === "ArrowLeft") {
                 e.preventDefault();
                 rejectOneChar();
                 return;
             }
+
+            // Enter: ゴーストを破棄
             if (e.key === "Enter") {
                 e.preventDefault();
                 clearGhost();
                 setStatus("", "ghost_cleared");
                 return;
             }
+
+            // Escape: ゴーストを破棄
             if (e.key === "Escape") {
                 e.preventDefault();
                 clearGhost();
@@ -887,11 +1378,14 @@
             }
         });
 
-        // ====== Init ======
-        loadSettings();
-        loadKeyFromStorage();
-        render();
-        setStatus("", "idle");
+        // ============================================
+        // 初期化処理
+        // ページ読み込み時に実行
+        // ============================================
+        loadSettings();          // 保存された設定を読み込み
+        loadKeyFromStorage();    // 保存されたAPIキーを読み込み
+        render();                // 初期描画
+        setStatus("", "idle");   // 初期ステータス
     </script>
 </body>
 </html>

@@ -89,7 +89,7 @@
         }
         .seg button:hover { background: rgba(255,255,255,.06); }
 
-        input[type="password"], input[type="text"]{
+        input[type="password"], input[type="text"], input[type="number"] {
             border: 1px solid var(--border);
             background: rgba(0,0,0,.18);
             color: rgba(255,255,255,.92);
@@ -99,6 +99,13 @@
             font-size: 12px;
             font-family: var(--mono);
             width: min(380px, 70vw);
+        }
+        input[type="number"] {
+            width: 80px;
+        }
+        input[type="range"] {
+            width: 120px;
+            accent-color: var(--accent);
         }
         .mini {
             width: 200px;
@@ -114,6 +121,8 @@
         }
         .btn:hover { background: rgba(255,255,255,.09); }
         .btn.danger:hover { background: rgba(251,113,133,.14); border-color: rgba(251,113,133,.3); }
+        .btn.primary { background: rgba(96,165,250,.2); border-color: rgba(96,165,250,.3); }
+        .btn.primary:hover { background: rgba(96,165,250,.3); }
         .status {
             font-size: 12px;
             color: var(--muted);
@@ -194,6 +203,87 @@
             color: var(--muted);
         }
         a { color: rgba(96,165,250,.95); }
+
+        /* Settings Panel */
+        .settings-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255,255,255,.02);
+            user-select: none;
+        }
+        .settings-toggle:hover {
+            background: rgba(255,255,255,.04);
+        }
+        .settings-toggle .arrow {
+            transition: transform 0.2s;
+            font-size: 10px;
+        }
+        .settings-toggle.open .arrow {
+            transform: rotate(90deg);
+        }
+        .settings-panel {
+            display: none;
+            padding: 14px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0,0,0,.1);
+        }
+        .settings-panel.open {
+            display: block;
+        }
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .setting-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .setting-item .label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .setting-item .value-display {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent);
+            background: rgba(96,165,250,.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .setting-item textarea {
+            border: 1px solid var(--border);
+            background: rgba(0,0,0,.18);
+            color: rgba(255,255,255,.92);
+            padding: 10px;
+            border-radius: 10px;
+            outline: none;
+            font-size: 12px;
+            font-family: var(--mono);
+            resize: vertical;
+            min-height: 80px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .setting-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .settings-actions {
+            margin-top: 14px;
+            display: flex;
+            gap: 10px;
+        }
+        .prompt-full {
+            grid-column: 1 / -1;
+        }
     </style>
 </head>
 <body>
@@ -230,6 +320,68 @@
                 </div>
             </div>
 
+            <!-- Settings Panel -->
+            <div class="settings-toggle" id="settingsToggle">
+                <span class="arrow">▶</span>
+                <span>設定</span>
+            </div>
+            <div class="settings-panel" id="settingsPanel">
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <div class="label">
+                            待機時間 (ms)
+                            <span class="value-display" id="debounceDisplay">700</span>
+                        </div>
+                        <div class="setting-row">
+                            <input type="range" id="debounceRange" min="100" max="2000" step="100" value="700" />
+                            <input type="number" id="debounceInput" min="100" max="5000" step="50" value="700" />
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="label">
+                            Temperature
+                            <span class="value-display" id="temperatureDisplay">0.7</span>
+                        </div>
+                        <div class="setting-row">
+                            <input type="range" id="temperatureRange" min="0" max="2" step="0.1" value="0.7" />
+                            <input type="number" id="temperatureInput" min="0" max="2" step="0.1" value="0.7" />
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="label">
+                            Max Output Tokens
+                            <span class="value-display" id="maxTokensDisplay">96</span>
+                        </div>
+                        <div class="setting-row">
+                            <input type="range" id="maxTokensRange" min="16" max="512" step="16" value="96" />
+                            <input type="number" id="maxTokensInput" min="1" max="4096" step="1" value="96" />
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="label">
+                            Max Context Chars
+                            <span class="value-display" id="maxContextDisplay">2000</span>
+                        </div>
+                        <div class="setting-row">
+                            <input type="range" id="maxContextRange" min="500" max="10000" step="500" value="2000" />
+                            <input type="number" id="maxContextInput" min="100" max="50000" step="100" value="2000" />
+                        </div>
+                    </div>
+                    <div class="setting-item prompt-full">
+                        <div class="label">システムプロンプト</div>
+                        <textarea id="systemPrompt" rows="5">あなたがやること：
+- 入力されたテキストの「続き」だけを自然に補完する
+- 既存の文章は絶対に繰り返さない（出力に含めない）
+- 可能なら1〜2文程度で止める（短め）
+- 余計な解説はしない（続きの本文のみ）</textarea>
+                    </div>
+                </div>
+                <div class="settings-actions">
+                    <button class="btn primary" id="saveSettingsBtn" type="button">設定を保存</button>
+                    <button class="btn" id="resetSettingsBtn" type="button">デフォルトに戻す</button>
+                </div>
+            </div>
+
             <!-- Middle: text input with ghost completion -->
             <div class="editor">
                 <div class="editorShell" aria-label="Editor">
@@ -245,7 +397,7 @@
             <div class="foot">
                 <div><strong>使い方</strong></div>
                 <ul style="margin:8px 0 0; padding-left: 18px;">
-                    <li>テキスト欄の入力が <kbd>700ms</kbd> 止まると、続きが <span style="color:var(--ghost);">灰色</span> で表示されます。</li>
+                    <li>テキスト欄の入力が <kbd id="debounceHint">700ms</kbd> 止まると、続きが <span style="color:var(--ghost);">灰色</span> で表示されます。</li>
                     <li><kbd>Tab</kbd>：灰色部分を全部確定（追記）</li>
                     <li><kbd>→</kbd>：灰色部分を1文字確定 / <kbd>←</kbd>：1文字戻す（カーソルが末尾にあるときのみ）</li>
                     <li><kbd>Enter</kbd>：灰色部分を削除（提案を破棄）※提案が無いときは普通に改行</li>
@@ -256,16 +408,27 @@
     </div>
 
     <script>
-        // ====== Settings ======
-        const STORAGE_KEY = "demo_openai_api_key_v1"; // localStorage key
-        const DEBOUNCE_MS = 700;
-        const MAX_CONTEXT_CHARS = 2000;
-        const MAX_OUTPUT_TOKENS = 96;      // small completion
-        const TEMPERATURE = 0.7;
-        const DEBUG_CONSOLE = true;      // ここを false にするとログ停止
-        const LOG_TRIM = 800;            // 入出力テキストを最大何文字ログするか
-        const LOG_RESPONSE_JSON = false; // trueでレスポンスJSON全部出す
+        // ====== Default Settings ======
+        const DEFAULTS = {
+            debounceMs: 700,
+            maxContextChars: 2000,
+            maxOutputTokens: 96,
+            temperature: 0.7,
+            systemPrompt: `あなたがやること：
+- 入力されたテキストの「続き」だけを自然に補完する
+- 既存の文章は絶対に繰り返さない（出力に含めない）
+- 可能なら1〜2文程度で止める（短め）
+- 余計な解説はしない（続きの本文のみ）`
+        };
 
+        const STORAGE_KEY = "demo_openai_api_key_v1";
+        const SETTINGS_KEY = "demo_openai_settings_v1";
+        const DEBUG_CONSOLE = true;
+        const LOG_TRIM = 800;
+        const LOG_RESPONSE_JSON = false;
+
+        // ====== Settings State ======
+        let settings = { ...DEFAULTS };
 
         // ====== DOM ======
         const modelTabs = document.getElementById("modelTabs");
@@ -277,17 +440,108 @@
         const mirrorEl = document.getElementById("mirror");
         const ta = document.getElementById("ta");
 
+        // Settings DOM
+        const settingsToggle = document.getElementById("settingsToggle");
+        const settingsPanel = document.getElementById("settingsPanel");
+        const debounceRange = document.getElementById("debounceRange");
+        const debounceInput = document.getElementById("debounceInput");
+        const debounceDisplay = document.getElementById("debounceDisplay");
+        const debounceHint = document.getElementById("debounceHint");
+        const temperatureRange = document.getElementById("temperatureRange");
+        const temperatureInput = document.getElementById("temperatureInput");
+        const temperatureDisplay = document.getElementById("temperatureDisplay");
+        const maxTokensRange = document.getElementById("maxTokensRange");
+        const maxTokensInput = document.getElementById("maxTokensInput");
+        const maxTokensDisplay = document.getElementById("maxTokensDisplay");
+        const maxContextRange = document.getElementById("maxContextRange");
+        const maxContextInput = document.getElementById("maxContextInput");
+        const maxContextDisplay = document.getElementById("maxContextDisplay");
+        const systemPrompt = document.getElementById("systemPrompt");
+        const saveSettingsBtn = document.getElementById("saveSettingsBtn");
+        const resetSettingsBtn = document.getElementById("resetSettingsBtn");
+
         // ====== State ======
         let selectedModel = "gpt-4o-mini";
         let ghost = "";
         let debounceTimer = null;
-        let inFlight = null; // AbortController
-        let lastRequestedPrefix = ""; // to avoid applying stale results
+        let inFlight = null;
+        let lastRequestedPrefix = "";
+
+        // ====== Settings Functions ======
+        function loadSettings() {
+            try {
+                const saved = localStorage.getItem(SETTINGS_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    settings = { ...DEFAULTS, ...parsed };
+                }
+            } catch (_) {}
+            applySettingsToUI();
+        }
+
+        function saveSettings() {
+            try {
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+                setStatus("ok", "settings_saved");
+            } catch (e) {
+                setStatus("bad", "save_failed");
+            }
+        }
+
+        function resetSettings() {
+            settings = { ...DEFAULTS };
+            applySettingsToUI();
+            saveSettings();
+            setStatus("ok", "settings_reset");
+        }
+
+        function applySettingsToUI() {
+            debounceRange.value = settings.debounceMs;
+            debounceInput.value = settings.debounceMs;
+            debounceDisplay.textContent = settings.debounceMs;
+            debounceHint.textContent = settings.debounceMs + "ms";
+
+            temperatureRange.value = settings.temperature;
+            temperatureInput.value = settings.temperature;
+            temperatureDisplay.textContent = settings.temperature;
+
+            maxTokensRange.value = settings.maxOutputTokens;
+            maxTokensInput.value = settings.maxOutputTokens;
+            maxTokensDisplay.textContent = settings.maxOutputTokens;
+
+            maxContextRange.value = settings.maxContextChars;
+            maxContextInput.value = settings.maxContextChars;
+            maxContextDisplay.textContent = settings.maxContextChars;
+
+            systemPrompt.value = settings.systemPrompt;
+        }
+
+        function readSettingsFromUI() {
+            settings.debounceMs = parseInt(debounceInput.value) || DEFAULTS.debounceMs;
+            settings.temperature = parseFloat(temperatureInput.value) || DEFAULTS.temperature;
+            settings.maxOutputTokens = parseInt(maxTokensInput.value) || DEFAULTS.maxOutputTokens;
+            settings.maxContextChars = parseInt(maxContextInput.value) || DEFAULTS.maxContextChars;
+            settings.systemPrompt = systemPrompt.value || DEFAULTS.systemPrompt;
+        }
+
+        // Setting sync helpers
+        function syncSetting(rangeEl, inputEl, displayEl, key, parser, extraUpdate) {
+            const update = (val) => {
+                const parsed = parser(val);
+                settings[key] = parsed;
+                rangeEl.value = parsed;
+                inputEl.value = parsed;
+                displayEl.textContent = parsed;
+                if (extraUpdate) extraUpdate(parsed);
+            };
+            rangeEl.addEventListener("input", () => update(rangeEl.value));
+            inputEl.addEventListener("input", () => update(inputEl.value));
+            inputEl.addEventListener("change", () => update(inputEl.value));
+        }
 
         // ====== Helpers ======
         function maskApiKey(k) {
             if (!k) return "";
-            // 先頭4文字だけ残してマスク
             const head = k.slice(0, 4);
             return head + "…" + "*".repeat(Math.max(0, k.length - 5));
         }
@@ -322,7 +576,6 @@
 
         function render() {
             const text = ta.value || "";
-            // Keep trailing newline visible in <pre>
             const safeText = escapeHtml(text).replace(/\n$/g, "\n\u200b");
             const safeGhost = escapeHtml(ghost);
             mirrorEl.innerHTML = safeText + (ghost ? `<span class="ghost">${safeGhost}</span>` : "");
@@ -341,7 +594,6 @@
             if (!ghost) return;
             ta.value += ghost;
             ghost = "";
-            // move caret to end
             ta.selectionStart = ta.selectionEnd = ta.value.length;
             render();
         }
@@ -382,23 +634,15 @@
             if (!completion) return "";
             let c = completion;
 
-            // If model echoed some of the prefix, remove overlap (simple heuristic)
-            // Check if completion starts with last 50 chars of prefix (or smaller)
             const tail = prefix.slice(-50);
             if (tail && c.startsWith(tail)) c = c.slice(tail.length);
-
-            // If it repeats the full prefix (rare), strip that too
             if (c.startsWith(prefix)) c = c.slice(prefix.length);
-
-            // Avoid huge leading whitespace if prefix already ends with whitespace
             if (/\s$/.test(prefix)) c = c.replace(/^\s+/, "");
 
             return c;
         }
 
         function extractOutputText(json) {
-            // The REST response often contains output items with {content:[{type:"output_text", text:"..."}]}
-            // We'll extract concatenated output_text blocks.
             if (!json) return "";
             if (typeof json.output_text === "string") return json.output_text;
 
@@ -425,24 +669,14 @@
                 return "";
             }
 
-            // Keep only the tail as context (demo)
-            const context = prefix.slice(-MAX_CONTEXT_CHARS);
-
-            const instructions =
-`あなたがやること：
-- 入力されたテキストの「続き」だけを自然に補完する
-- 既存の文章は絶対に繰り返さない（出力に含めない）
-- 可能なら1〜2文程度で止める（短め）
-- 余計な解説はしない（続きの本文のみ）`;
+            const context = prefix.slice(-settings.maxContextChars);
 
             const body = {
                 model: getModel(),
-                instructions,
+                instructions: settings.systemPrompt,
                 input: context,
-                max_output_tokens: MAX_OUTPUT_TOKENS,
-                temperature: TEMPERATURE,
-                // store false would be nicer for privacy; but keeping default behavior is okay for demo.
-                // store: false,
+                max_output_tokens: settings.maxOutputTokens,
+                temperature: settings.temperature,
             };
 
             if (DEBUG_CONSOLE) {
@@ -451,16 +685,14 @@
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        "Authorization": "Bearer " + maskApiKey(apiKey) // 伏せる
+                        "Authorization": "Bearer " + maskApiKey(apiKey)
                     },
                     body: {
                         ...body,
-                        // 入力だけ長くなりがちなのでログはトリム
                         input: trimForLog(body.input)
                     }
                 });
             }
-
 
             cancelInFlight();
             inFlight = new AbortController();
@@ -510,19 +742,15 @@
 
         // ====== Debounced completion logic ======
         async function scheduleCompletion() {
-            // Only show ghost when caret is at end (demo behavior)
             if (!atEnd()) { clearGhost(); return; }
 
             const text = ta.value || "";
             if (!text.trim()) { clearGhost(); setStatus("", "idle"); return; }
 
-            // if user continues typing, we should wipe old ghost
             clearGhost();
 
-            // debounce
             if (debounceTimer) clearTimeout(debounceTimer);
             debounceTimer = setTimeout(async () => {
-                // Avoid firing if caret moved
                 if (!atEnd()) return;
 
                 const prefix = ta.value || "";
@@ -530,7 +758,6 @@
 
                 try {
                     const completion = await requestCompletion(prefix);
-                    // If user changed text during the request, ignore stale result
                     if ((ta.value || "") !== lastRequestedPrefix) return;
 
                     const normalized = normalizeCompletion(prefix, completion);
@@ -541,7 +768,7 @@
                     if (e && e.name === "AbortError") return;
                     setStatus("bad", (e && e.message) ? e.message : "error");
                 }
-            }, DEBOUNCE_MS);
+            }, settings.debounceMs);
         }
 
         // ====== Model tabs ======
@@ -550,12 +777,36 @@
             if (!btn) return;
             selectedModel = btn.dataset.model;
             for (const b of modelTabs.querySelectorAll("button")) b.classList.toggle("active", b === btn);
-            // Changing model invalidates ghost
             clearGhost();
             scheduleCompletion();
         });
 
-        // ====== Key storage (requested: Web Storage) ======
+        // ====== Settings toggle ======
+        settingsToggle.addEventListener("click", () => {
+            settingsToggle.classList.toggle("open");
+            settingsPanel.classList.toggle("open");
+        });
+
+        // ====== Settings sync ======
+        syncSetting(debounceRange, debounceInput, debounceDisplay, "debounceMs", parseInt, (v) => {
+            debounceHint.textContent = v + "ms";
+        });
+        syncSetting(temperatureRange, temperatureInput, temperatureDisplay, "temperature", parseFloat);
+        syncSetting(maxTokensRange, maxTokensInput, maxTokensDisplay, "maxOutputTokens", parseInt);
+        syncSetting(maxContextRange, maxContextInput, maxContextDisplay, "maxContextChars", parseInt);
+
+        systemPrompt.addEventListener("input", () => {
+            settings.systemPrompt = systemPrompt.value;
+        });
+
+        saveSettingsBtn.addEventListener("click", () => {
+            readSettingsFromUI();
+            saveSettings();
+        });
+
+        resetSettingsBtn.addEventListener("click", resetSettings);
+
+        // ====== Key storage ======
         function loadKeyFromStorage() {
             try {
                 const saved = localStorage.getItem(STORAGE_KEY);
@@ -585,7 +836,6 @@
 
         // ====== Editor events ======
         ta.addEventListener("input", () => {
-            // any edit cancels in-flight and schedules a new completion
             cancelInFlight();
             scheduleCompletion();
             render();
@@ -597,24 +847,15 @@
         });
 
         ta.addEventListener("click", () => {
-            // if user clicks away from end, drop suggestion
             if (!atEnd()) clearGhost();
         });
 
         ta.addEventListener("keyup", () => {
-            // moving caret with mouse/keys should drop suggestion unless at end
             if (!atEnd()) clearGhost();
         });
 
         ta.addEventListener("keydown", (e) => {
-            // Behavior requirements:
-            // - Tab: accept ghost entirely
-            // - ArrowRight: accept 1 char
-            // - ArrowLeft: reject 1 char (move back to ghost)
-            // - Enter: delete ghost
             if (!ghost) return;
-
-            // Only when caret is at end (otherwise it gets weird fast)
             if (!atEnd()) return;
 
             if (e.key === "Tab") {
@@ -647,6 +888,7 @@
         });
 
         // ====== Init ======
+        loadSettings();
         loadKeyFromStorage();
         render();
         setStatus("", "idle");
